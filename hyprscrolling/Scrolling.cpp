@@ -852,10 +852,12 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
                     DATA->workspace->m_monitor.lock()
                 );
 
-                DATA->leftOffset = std::max(
-                    DATA->maxWidth() - USABLE.w,""
-                    0.0
+                DATA->leftOffset = std::clamp(
+                    DATA->maxWidth() - USABLE.w,
+                    0.0,
+                    DATA->maxWidth()
                 );
+
 
 
                 DATA->recalculate();
