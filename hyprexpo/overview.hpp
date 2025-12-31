@@ -47,8 +47,7 @@ class COverview {
     void       onWorkspaceChange();
     void       fullRender();
 
-    int        COLUMNS = 3;
-    int        ROWS    = 3;
+    int        SIDE_LENGTH = 3;
     int        GAP_WIDTH   = 5;
     CHyprColor BG_COLOR    = CHyprColor{0.1, 0.1, 0.1, 1.0};
 
