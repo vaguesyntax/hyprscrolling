@@ -485,7 +485,7 @@ void CScrollingLayout::onEnable() {
         }
     });
 
-    /* m_focusCallback = g_pHookSystem->hookDynamic("activeWindow", [this](void* hk, SCallbackInfo& info, std::any param) {
+    m_focusCallback = g_pHookSystem->hookDynamic("activeWindow", [this](void* hk, SCallbackInfo& info, std::any param) {
         const auto PWINDOW = std::any_cast<PHLWINDOW>(param);
 
         if (!PWINDOW)
@@ -514,7 +514,7 @@ void CScrollingLayout::onEnable() {
             continue;
 
         onWindowCreatedTiling(w);
-    } */
+    }
 }
 
 void CScrollingLayout::onDisable() {
@@ -726,7 +726,7 @@ void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner cor
         }
     }
 
-    DATA->column->workspace->recalculate(true);
+    // DATA->column->workspace->recalculate(true);
 }
 
 void CScrollingLayout::fullscreenRequestForWindow(PHLWINDOW pWindow, const eFullscreenMode CURRENT_EFFECTIVE_MODE, const eFullscreenMode EFFECTIVE_MODE) {
