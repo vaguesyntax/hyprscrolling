@@ -1145,12 +1145,9 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             case 'b':
             case 'd': {
                 auto NEXT = WDATA->column->next(WDATA);
-                if (!NEXT) {
-                    if (*PNOFALLBACK)
-                        break;
-                    else
-                        NEXT = WDATA->column->windowDatas.front();
-                }
+                if (!NEXT)
+                    break; // sondaysan -> hiçbir şey yapma
+
 
                 focusWindowUpdate(NEXT->window.lock());
                 g_pCompositor->warpCursorTo(NEXT->window.lock()->middle());
@@ -1181,15 +1178,8 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             case 'r': {
                 auto NEXT = WDATA->column->workspace->next(WDATA->column.lock());
-                if (!NEXT) {
-                    if (*PNOFALLBACK) {
-                        centerOrFit(WDATA->column->workspace.lock(), WDATA->column.lock());
-                        WDATA->column->workspace->recalculate();
-                        g_pCompositor->warpCursorTo(WDATA->window.lock()->middle());
-                        break;
-                    } else
-                        NEXT = WDATA->column->workspace->columns.front();
-                }
+                if (!NEXT)
+                    break;  
 
                 auto pTargetWindowData = findBestNeighbor(WDATA, NEXT);
                 if (pTargetWindowData) {
