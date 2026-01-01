@@ -18,7 +18,6 @@ struct SScrollingWindowData {
     WP<SColumnData> column;
     float           windowSize             = 1.F;
     bool            ignoreFullscreenChecks = false;
-    bool            m_isResizing           = false;
 
     PHLWORKSPACEREF overrideWorkspace;
 

@@ -493,8 +493,6 @@ void CScrollingLayout::onEnable() {
 
         static const auto PFOLLOW_FOCUS = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:follow_focus");
 
-        if (m_isResizing)
-            return;
 
         if (!*PFOLLOW_FOCUS)
             return;
@@ -730,7 +728,6 @@ void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner cor
     }
 
     DATA->column->workspace->recalculate(true);
-    m_isResizing = false;
 }
 
 void CScrollingLayout::fullscreenRequestForWindow(PHLWINDOW pWindow, const eFullscreenMode CURRENT_EFFECTIVE_MODE, const eFullscreenMode EFFECTIVE_MODE) {
