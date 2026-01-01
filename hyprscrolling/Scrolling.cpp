@@ -485,17 +485,13 @@ void CScrollingLayout::onEnable() {
         }
     });
 
-    m_focusCallback = g_pHookSystem->hookDynamic("activeWindow", [this](void* hk, SCallbackInfo& info, std::any param) {
+    /* m_focusCallback = g_pHookSystem->hookDynamic("activeWindow", [this](void* hk, SCallbackInfo& info, std::any param) {
         const auto PWINDOW = std::any_cast<PHLWINDOW>(param);
 
         if (!PWINDOW)
             return;
 
         static const auto PFOLLOW_FOCUS = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:follow_focus");
-
-        if (m_isResizing)
-            return;
-
 
         if (!*PFOLLOW_FOCUS)
             return;
@@ -518,7 +514,7 @@ void CScrollingLayout::onEnable() {
             continue;
 
         onWindowCreatedTiling(w);
-    }
+    } */
 }
 
 void CScrollingLayout::onDisable() {
@@ -634,7 +630,6 @@ void CScrollingLayout::onBeginDragWindow() {
 }
 
 void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner corner, PHLWINDOW pWindow) {
-    m_isResizing = true;
     const auto PWINDOW  = pWindow ? pWindow : Desktop::focusState()->window();
     Vector2D   modDelta = delta;
 
@@ -732,7 +727,6 @@ void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner cor
     }
 
     DATA->column->workspace->recalculate(true);
-    m_isResizing = false;
 }
 
 void CScrollingLayout::fullscreenRequestForWindow(PHLWINDOW pWindow, const eFullscreenMode CURRENT_EFFECTIVE_MODE, const eFullscreenMode EFFECTIVE_MODE) {
