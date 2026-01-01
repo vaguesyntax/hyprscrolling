@@ -273,7 +273,8 @@ SP<SColumnData> SWorkspaceData::atCenter() {
     return nullptr;
 }
 
-void SWorkspaceData::recalculate(bool forceInstant) {
+void SWorkspaceData::recalculate(bool forceInstant, bool freezeOffset = false) {
+
     static const auto PFSONONE = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:fullscreen_on_one_column");
 
     if (!workspace) {
@@ -290,6 +291,9 @@ void SWorkspaceData::recalculate(bool forceInstant) {
     double       currentLeft = 0;
     const double cameraLeft  = MAX_WIDTH < USABLE.w ? std::round((MAX_WIDTH - USABLE.w) / 2.0) : leftOffset; // layout pixels
     const auto   workAreaPos = layout->workAreaOnWorkspace(PMONITOR->m_activeWorkspace).pos();
+
+    if(freezeOffset)
+        cameraLeft = leftOffset;
 
     for (size_t i = 0; i < columns.size(); ++i) {
         const auto&  COL        = columns[i];
@@ -726,10 +730,7 @@ void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner cor
         }
     }
 
-    double oldLeftOffset = DATA->column->workspace->leftOffset;
-    DATA->column->workspace->recalculate(true);
-    DATA->column->workspace->leftOffset = oldLeftOffset;
-
+    DATA->column->workspace->recalculate(true, true);
 }
 
 void CScrollingLayout::fullscreenRequestForWindow(PHLWINDOW pWindow, const eFullscreenMode CURRENT_EFFECTIVE_MODE, const eFullscreenMode EFFECTIVE_MODE) {
