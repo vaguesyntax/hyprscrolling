@@ -985,26 +985,29 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
     } else if (ARGS[0] == "fit") {
 
         if (ARGS[1] == "active") {
-            // fit the current column to 1.F
-            const auto WDATA    = dataFor(Desktop::focusState()->window());
-            const auto WORKDATA = dataFor(Desktop::focusState()->window()->m_workspace);
+            const auto PWINDOW = Desktop::focusState()->window();
+            if (!PWINDOW)
+                return {}; // veya sadece break
 
-            if (!WDATA || !WORKDATA || WORKDATA->columns.size() == 0)
+            const auto WDATA    = dataFor(PWINDOW);
+            const auto WORKDATA = dataFor(PWINDOW->m_workspace);
+
+            if (!WDATA || !WORKDATA || WORKDATA->columns.empty())
                 return {};
 
             const auto USABLE = usableAreaFor(WORKDATA->workspace->m_monitor.lock());
 
             WDATA->column->columnWidth = 1.F;
-
             WORKDATA->leftOffset = 0;
+
             for (size_t i = 0; i < WORKDATA->columns.size(); ++i) {
-                if (WORKDATA->columns[i]->has(Desktop::focusState()->window()))
+                if (WORKDATA->columns[i]->has(PWINDOW))
                     break;
 
                 WORKDATA->leftOffset += USABLE.w * WORKDATA->columns[i]->columnWidth;
             }
 
-            WDATA->column->workspace->recalculate();
+            WORKDATA->recalculate();
         } else if (ARGS[1] == "all") {
             // fit all columns on screen
             const auto WDATA = dataFor(Desktop::focusState()->window()->m_workspace);
