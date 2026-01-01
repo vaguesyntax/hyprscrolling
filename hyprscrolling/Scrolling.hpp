@@ -130,6 +130,7 @@ class CScrollingLayout : public IHyprLayout {
 
     void                     applyNodeDataToWindow(SP<SScrollingWindowData> node, bool instant, bool hasWindowsRight, bool hasWindowsLeft);
     void                     focusWindowUpdate(PHLWINDOW pWindow);
+    bool            m_isResizing           = false;
 
     friend struct SWorkspaceData;
 };
