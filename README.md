@@ -1,112 +1,78 @@
-# hyprland-plugins
+# hyprscrolling
 
-This repo houses official plugins for Hyprland.
+A [Niri](https://github.com/YaLTeR/niri) like scrollable window management plugin for hyprland.
 
-# Plugin list
- - borders-plus-plus -> adds one or two additional borders to windows
- - csgo-vulkan-fix -> fixes custom resolutions on CS:GO with `-vulkan`
- - hyprbars -> adds title bars to windows
- - hyprexpo -> adds an expo-like workspace overview
- - hyprfocus -> flashfocus for hyprland
- - hyprscrolling -> adds a scrolling layout to hyprland
- - hyprtrails -> adds smooth trails behind moving windows
- - hyprwinwrap -> clone of xwinwrap, allows you to put any app as a wallpaper
- - xtra-dispatchers -> adds some new dispatchers
+## installation
 
-# Install
-> [!IMPORTANT]
-> hyprland-plugins only officially supports installation via `hyprpm`.
-> `hyprpm` automatically detects your hyprland version & installs only
-> the corresponding "pinned" release of hyprland-plugins.
-> If you want the latest commits to hyprland-plugins, you need to use
-> `hyprland-git`.
+Update your headers with `hyprpm update` if you haven't.
 
-## Install with `hyprpm`
+Then add this repository and enable the plugin
 
-To install these plugins, from the command line run:
 ```bash
-hyprpm update
+hyprpm add https://github.com/vaguesyntax/hyprscrolling
+hyprpm enable hyprscrolling
 ```
-Then add this repository:
+
+Set your `general::layout::` to `scrolling` to enable scrolling tiling
+
 ```bash
-hyprpm add https://github.com/hyprwm/hyprland-plugins
-```
-then enable the desired plugin with
-```bash
-hyprpm enable <plugin-name>
-```
-
-See the respective README's in the subdirectories for configuration options.
-
-See [the plugins wiki](https://wiki.hyprland.org/Plugins/Using-Plugins/#installing--using-plugins) and `hyprpm -h` for more details.
-
-## Install on Nix
-
-To use these plugins, it's recommended that you are already using the
-[Hyprland flake](https://github.com/hyprwm/Hyprland).
-First, add this flake to your inputs:
-
-```nix
-inputs = {
-  # ...
-  hyprland.url = "github:hyprwm/Hyprland";
-  hyprland-plugins = {
-    url = "github:hyprwm/hyprland-plugins";
-    inputs.hyprland.follows = "hyprland";
-  };
-
-  # ...
-};
-```
-
-The `inputs.hyprland.follows` guarantees the plugins will always be built using
-your locked Hyprland version, thus you will never get version mismatches that
-lead to errors.
-
-After that's done, you can use the plugins with the Home Manager module like
-this:
-
-```nix
-{inputs, pkgs, ...}: {
-  wayland.windowManager.hyprland = {
-    enable = true;
-    # ...
-    plugins = [
-      inputs.hyprland-plugins.packages.${pkgs.system}.hyprbars
-      # ...
-    ];
-  };
+general {
+ layout = scrolling
 }
 ```
-
-If you don't use Home Manager:
-
-```nix
-{ lib, pkgs, inputs, ... }:
-with lib; let
-  hyprPluginPkgs = inputs.hyprland-plugins.packages.${pkgs.system};
-  hypr-plugin-dir = pkgs.symlinkJoin {
-    name = "hyrpland-plugins";
-    paths = with hyprPluginPkgs; [
-      hyprexpo
-      #...plugins
-    ];
-  };
-in
-{
-  environment.sessionVariables = { HYPR_PLUGIN_DIR = hypr-plugin-dir; };
+Set the settings in your config file _(full list available below)_
+```bash
+plugin {
+    hyprscrolling {
+        column_width = 0.7
+        fullscreen_on_one_column = true
+    }
 }
 ```
+Add your desired keybinds to work with windowses
 
-And in `hyprland.conf`
+This keybinds are mine, tweak it to your liking
+```bash
+bind = Super, mouse_up, layoutmsg, move +col
+bind = Super, mouse_down, layoutmsg, move -col
 
-```hyprlang
-# load all the plugins you installed
-exec-once = hyprctl plugin load "$HYPR_PLUGIN_DIR/lib/libhyprexpo.so"
+bind = Super+Alt, mouse_up, layoutmsg, colresize +conf
+bind = Super+Alt, mouse_down, layoutmsg, colresize -conf
+
+bind = Super+Shift, mouse_up, layoutmsg, swapcol r
+bind = Super+Shift, mouse_down, layoutmsg, swapcol l
+
+bind = Super, E, layoutmsg, fit active
 ```
 
-# Contributing
+## list of options
 
-Feel free to open issues and MRs with fixes.
+| name | description | type | default |
+| -- | -- | -- | -- |
+| fullscreen_on_one_column | if there's only one column, should it be fullscreen | bool | false |
+| column_width | default column width as a fraction of the monitor width | float [0 - 1] | 0.5 |
+| explicit_column_widths | a comma-separated list of widths for columns to be used with `+conf` or `-conf` | string | `0.333, 0.5, 0.667, 1.0` |
+| focus_fit_method | when a column is focused, what method to use to bring it into view. 0 - center, 1 - fit | int | 0 |
+| follow_focus | when a window is focused, the layout will move to make it visible | bool | true |
 
-If you want your plugin added here, contact vaxry beforehand.
+## list of keybind actions
+
+| name | description | params |
+| --- | --- | --- |
+| move | move the layout horizontally, by either a relative logical px (`-200`, `+200`) or columns (`+col`, `-col`) | move data |
+| colresize | resize the current column, to either a value or by a relative value e.g. `0.5`, `+0.2`, `-0.2` or cycle the preconfigured ones with `+conf` or `-conf`. Can also be `all (number)` for resizing all columns to a specific width | relative float / relative conf |
+| movewindowto | same as the movewindow dispatcher but supports promotion to the right at the end | direction |
+| fit | executes a fit operation based on the argument. Available: `active`, `visible`, `all`, `toend`, `tobeg` | fit mode |
+| focus | moves the focus and centers the layout, while also wrapping instead of moving to neighbring monitors. | direction |
+| promote | moves a window to its own new column | none |
+| swapcol | Swaps the current column with its neighbor to the left (`l`) or right (`r`). The swap wraps around (e.g., swapping the first column left moves it to the end). | `l` or `r` |
+| movecoltoworkspace | Moves the entire current column to the specified workspace, preserving its internal layout. Works with existing, new, and special workspaces. e.g. like `1`, `2`, `-1`, `+2`, `special`, etc. | workspace identifier|
+| togglefit | Toggle the focus_fit_method (center, fit) | none |
+
+
+
+
+- Fork of https://github.com/hyprwm/hyprland-plugins/tree/main/hyprscrolling
+
+
+
