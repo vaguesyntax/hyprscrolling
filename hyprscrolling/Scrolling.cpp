@@ -504,7 +504,7 @@ void CScrollingLayout::onEnable() {
         if (!DATA || !WINDOWDATA)
             return;
 
-        // DATA->fitCol(WINDOWDATA->column.lock());
+        DATA->fitCol(WINDOWDATA->column.lock());
         // DATA->recalculate(); not recalculating here is fine
     });
 
