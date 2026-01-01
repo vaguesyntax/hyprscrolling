@@ -273,8 +273,7 @@ SP<SColumnData> SWorkspaceData::atCenter() {
     return nullptr;
 }
 
-void SWorkspaceData::recalculate(bool forceInstant, bool freezeOffset = false) {
-
+void SWorkspaceData::recalculate(bool forceInstant, bool freezeOffset) {
     static const auto PFSONONE = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:fullscreen_on_one_column");
 
     if (!workspace) {
@@ -289,7 +288,7 @@ void SWorkspaceData::recalculate(bool forceInstant, bool freezeOffset = false) {
     const CBox   USABLE = layout->usableAreaFor(PMONITOR);
 
     double       currentLeft = 0;
-    const double cameraLeft  = MAX_WIDTH < USABLE.w ? std::round((MAX_WIDTH - USABLE.w) / 2.0) : leftOffset; // layout pixels
+    double cameraLeft  = MAX_WIDTH < USABLE.w ? std::round((MAX_WIDTH - USABLE.w) / 2.0) : leftOffset; // layout pixels
     const auto   workAreaPos = layout->workAreaOnWorkspace(PMONITOR->m_activeWorkspace).pos();
 
     if(freezeOffset)
