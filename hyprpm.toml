@@ -1,6 +1,6 @@
 [repository]
-name = "hyprland-plugins"
-authors = ["Vaxry"]
+name = "hyprscrolling"
+authors = ["VagueSyntax"]
 commit_pins = [
     ["3bb9c7c5cf4f2ee30bf821501499f2308d616f94", "efee74a7404495dbda70205824d6e9fc923ccdae"],
     ["d74607e414dcd16911089a6d4b6aeb661c880923", "efee74a7404495dbda70205824d6e9fc923ccdae"],
@@ -41,63 +41,6 @@ commit_pins = [
     ["386376400119dd46a767c9f8c8791fd22c7b6e61", "8c1212e96b81aa5f11fe21ca27defa2aad5b3cf3"]  # 0.52.2
 ]
 
-[borders-plus-plus]
-description = "A plugin to add more borders to windows."
-authors = ["Vaxry"]
-output = "borders-plus-plus/borders-plus-plus.so"
-build = [
-    "make -C borders-plus-plus all",
-]
-
-[csgo-vulkan-fix]
-description = "A plugin to fix incorrect mouse offsets on csgo in Vulkan"
-authors = ["Vaxry"]
-output = "csgo-vulkan-fix/csgo-vulkan-fix.so"
-build = [
-    "make -C csgo-vulkan-fix all",
-]
-
-[hyprbars]
-description = "A plugin to add title bars to windows"
-authors = ["Vaxry"]
-output = "hyprbars/hyprbars.so"
-build = [
-    "make -C hyprbars all",
-]
-
-[hyprtrails]
-description = "A plugin to add trails behind moving windows"
-authors = ["Vaxry"]
-output = "hyprtrails/hyprtrails.so"
-build = [
-    "make -C hyprtrails all",
-]
-
-[hyprwinwrap]
-description = "A clone of xwinwrap for Hyprland"
-authors = ["Vaxry"]
-output = "hyprwinwrap/hyprwinwrap.so"
-build = [
-    "make -C hyprwinwrap all",
-]
-
-[hyprexpo]
-description = "A plugin to add expo (overlay) for workspaces"
-authors = ["Vaxry"]
-output = "hyprexpo/hyprexpo.so"
-build = [
-    "make -C hyprexpo all",
-]
-since_hyprland = 4364
-
-[xtra-dispatchers]
-description = "A plugin to add some extra dispatchers"
-authors = ["Vaxry"]
-output = "xtra-dispatchers/xtra-dispatchers.so"
-build = [
-    "make -C xtra-dispatchers all",
-]
-since_hyprland = 5573
 
 [hyprscrolling]
 description = "A plugin to add a scrolling layout"
@@ -108,11 +51,3 @@ build = [
 ]
 since_hyprland = 6066
 
-[hyprfocus]
-description = "Flashfocus for Hyprland"
-authors = ["Vaxry"]
-output = "hyprfocus/hyprfocus.so"
-build = [
-    "make -C hyprfocus all",
-]
-since_hyprland = 6066
