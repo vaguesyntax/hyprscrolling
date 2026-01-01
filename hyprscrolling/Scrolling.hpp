@@ -78,7 +78,7 @@ struct SWorkspaceData {
     void                         fitCol(SP<SColumnData> c);
     void                         centerOrFitCol(SP<SColumnData> c);
 
-    void                         recalculate(bool forceInstant = false);
+    void                         recalculate(bool forceInstant = false, bool freezeOffset = false);
 
     CScrollingLayout*            layout = nullptr;
     WP<SWorkspaceData>           self;
