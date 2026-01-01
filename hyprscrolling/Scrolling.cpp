@@ -726,7 +726,10 @@ void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner cor
         }
     }
 
-    DATA->column->workspace->recalculate(false);
+    double oldLeftOffset = DATA->column->workspace->leftOffset;
+    DATA->column->workspace->recalculate(true);
+    DATA->column->workspace->leftOffset = oldLeftOffset;
+
 }
 
 void CScrollingLayout::fullscreenRequestForWindow(PHLWINDOW pWindow, const eFullscreenMode CURRENT_EFFECTIVE_MODE, const eFullscreenMode EFFECTIVE_MODE) {
