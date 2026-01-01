@@ -633,7 +633,6 @@ void CScrollingLayout::onBeginDragWindow() {
 }
 
 void CScrollingLayout::resizeActiveWindow(const Vector2D& delta, eRectCorner corner, PHLWINDOW pWindow) {
-    m_isResizing = true;
     const auto PWINDOW  = pWindow ? pWindow : Desktop::focusState()->window();
     Vector2D   modDelta = delta;
 
