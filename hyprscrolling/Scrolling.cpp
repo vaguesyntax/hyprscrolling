@@ -1285,6 +1285,53 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         std::swap(WS_DATA->columns[current_idx], WS_DATA->columns[target_idx]);
         WS_DATA->centerOrFitCol(CURRENT_COL);
         WS_DATA->recalculate();
+    } else if (ARGS[0] == "swapaddr") {
+        if (ARGS.size() < 3)
+            return {};
+
+        const auto WIN1 = findWindowByAddress(ARGS[1]);
+        const auto WIN2 = findWindowByAddress(ARGS[2]);
+
+        if (!WIN1 || !WIN2)
+            return {};
+
+        const auto DATA1 = dataFor(WIN1);
+        const auto DATA2 = dataFor(WIN2);
+
+        if (!DATA1 || !DATA2)
+            return {};
+
+        const auto COL1 = DATA1->column.lock();
+        const auto COL2 = DATA2->column.lock();
+
+        if (!COL1 || !COL2)
+            return {};
+
+        const auto WS1 = COL1->workspace.lock();
+        const auto WS2 = COL2->workspace.lock();
+
+        if (!WS1 || WS1 != WS2) {
+            return {};
+        } 
+
+        if (COL1 == COL2) {
+            auto idx1 = COL1->idx(WIN1);
+            auto idx2 = COL1->idx(WIN2);
+            if (idx1 != idx2)
+                std::swap(COL1->windowDatas[idx1], COL1->windowDatas[idx2]);
+        } else { 
+            auto idx1 = COL1->idx(WIN1);
+            auto idx2 = COL2->idx(WIN2);
+
+            auto tmp = COL1->windowDatas[idx1];
+            COL1->windowDatas[idx1] = COL2->windowDatas[idx2];
+            COL2->windowDatas[idx2] = tmp;
+
+            COL1->windowDatas[idx1]->column = COL1;
+            COL2->windowDatas[idx2]->column = COL2;
+        }
+
+        WS1->recalculate();
     } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
