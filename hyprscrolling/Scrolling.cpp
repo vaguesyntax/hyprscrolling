@@ -140,6 +140,19 @@ bool SColumnData::has(PHLWINDOW w) {
     return std::ranges::find_if(windowDatas, [w](const auto& e) { return e->window == w; }) != windowDatas.end();
 }
 
+static PHLWINDOW findWindowByAddress(const std::string& addr) {
+    for (auto& w : g_pCompositor->m_vWindows) {
+        if (!w)
+            continue;
+
+        if (w->m_szAddress == addr)
+            return w;
+    }
+
+    return nullptr;
+}
+
+
 SP<SColumnData> SWorkspaceData::add() {
     static const auto PCOLWIDTH = CConfigValue<Hyprlang::FLOAT>("plugin:hyprscrolling:column_width");
     auto              col       = columns.emplace_back(makeShared<SColumnData>(self.lock()));
@@ -826,6 +839,7 @@ SP<SScrollingWindowData> CScrollingLayout::findBestNeighbor(SP<SScrollingWindowD
     return nullptr;
 }
 
+
 std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::string message) {
     static auto centerOrFit = [](const SP<SWorkspaceData> WS, const SP<SColumnData> COL) -> void {
         static const auto PFITMETHOD = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:focus_fit_method");
@@ -1420,7 +1434,31 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             ws->recalculate();
         }
+    } else if (ARGS[0] == "focusaddr") {
+        if (ARGS.size() < 2)
+            return {};
+
+        const auto PWINDOW = findWindowByAddress(ARGS[1]);
+
+        if (!PWINDOW)
+            return {};
+
+        if (!validMapped(PWINDOW) || PWINDOW->isHidden())
+            return {};
+
+        if (!PWINDOW->m_workspace || !PWINDOW->m_workspace->isVisible())
+            return {};
+
+        focusWindowUpdate(PWINDOW);
+
+        const auto MID = PWINDOW->middle();
+        if (MID.x >= 0 && MID.y >= 0)
+            g_pCompositor->warpCursorTo(MID);
+
+        return {};
     }
+
+
     return {};
 }
 
