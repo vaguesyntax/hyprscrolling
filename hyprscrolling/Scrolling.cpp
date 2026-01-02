@@ -141,7 +141,7 @@ bool SColumnData::has(PHLWINDOW w) {
 }
 
 static PHLWINDOW findWindowByAddress(const std::string& addr) {
-    for (auto& w : g_pCompositor->m_vWindows) {
+    for (auto& w : g_pCompositor->m_windows) {
         if (!w)
             continue;
 
