@@ -141,16 +141,28 @@ bool SColumnData::has(PHLWINDOW w) {
 }
 
 static PHLWINDOW findWindowByAddress(const std::string& addr) {
+    if (addr.empty())
+        return nullptr;
+
+    uintptr_t target = 0;
+
+    try {
+        target = std::stoull(addr, nullptr, 16);
+    } catch (...) {
+        return nullptr;
+    }
+
     for (auto& w : g_pCompositor->m_windows) {
         if (!w)
             continue;
 
-        if (w->m_szAddress == addr)
+        if (reinterpret_cast<uintptr_t>(w.get()) == target)
             return w;
     }
 
     return nullptr;
 }
+
 
 
 SP<SColumnData> SWorkspaceData::add() {
