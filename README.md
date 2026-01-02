@@ -1,4 +1,4 @@
-# hyprscrolling (fork)
+# hyprscrolling
 
 A [Niri](https://github.com/YaLTeR/niri) like scrollable window management plugin for hyprland.
 
