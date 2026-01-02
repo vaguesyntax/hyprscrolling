@@ -1461,6 +1461,17 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         if (!PWINDOW->m_workspace || !PWINDOW->m_workspace->isVisible())
             return {};
 
+        
+
+        if (auto wd = dataFor(PWINDOW)) {
+            if (auto col = wd->column.lock()) {
+                if (auto ws = col->workspace.lock()) {
+                    ws->centerOrFitCol(col);
+                    ws->recalculate();
+                }
+            }
+        }
+
         focusWindowUpdate(PWINDOW);
 
         const auto MID = PWINDOW->middle();
