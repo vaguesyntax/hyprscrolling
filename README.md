@@ -67,7 +67,8 @@ bind = Super, E, layoutmsg, fit active
 | focusaddr | moves the focus and centers the layout to the given window, note that you have to be in the same workspace in order for this dispatch to work. You have to first call `hyprctl dispatch focuswindow address::___` and call this dispatch **after that** if you want to focus a window from another workspace | window address |
 | promote | moves a window to its own new column | none |
 | swapcol | Swaps the current column with its neighbor to the left (`l`) or right (`r`). The swap wraps around (e.g., swapping the first column left moves it to the end). | `l` or `r` |
-| swapaddr | Swaps the two given windows's places. They have to be in the same workspace (for now) | (window address) (window adress) |
+| swapaddr | Swaps the two given windows's places. They have to be in the same workspace | (window address) (window adress) |
+| swapaddrdir | Moves the source window to target's windowses right or lef. They have to be in the same workspace| (target win addr) (l-r) (source win addr) |
 | movecoltoworkspace | Moves the entire current column to the specified workspace, preserving its internal layout. Works with existing, new, and special workspaces. e.g. like `1`, `2`, `-1`, `+2`, `special`, etc. | workspace identifier|
 | togglefit | Toggle the focus_fit_method (center, fit) | none |
 
