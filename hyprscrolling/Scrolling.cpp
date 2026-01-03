@@ -1332,7 +1332,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         }
 
         WS1->recalculate();
-    } else if (ARGS[0] == "swapaddrdir") { // usage will be like this: <target_window_address> <direction (l|r)> <from_window_address>
+    } else if (ARGS[0] == "swapaddrdir") {
         if (ARGS.size() < 4)
             return {};
 
@@ -1340,7 +1340,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         const auto DIR        = ARGS[2];
         const auto FROM_WIN   = findWindowByAddress(ARGS[3]);
 
-        if (!TARGET_WIN || !FROM_WIN)
+        if (!TARGET_WIN || !FROM_WIN || TARGET_WIN == FROM_WIN)
             return {};
 
         const auto TARGET_DATA = dataFor(TARGET_WIN);
@@ -1356,36 +1356,35 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             return {};
 
         const auto WS = TARGET_COL->workspace.lock();
-        if (!WS || WS != FROM_COL->workspace.lock()) // different workspaces, ignoring
-            return {};
+        if (!WS || WS != FROM_COL->workspace.lock())
+            return {}; // farklı workspace abort
 
-        const int64_t targetColIdx = WS->idx(TARGET_COL);
-        if (targetColIdx < 0)
-            return {};
-
+        // from window'u eski column'dan çıkar
         FROM_COL->remove(FROM_WIN);
 
-        int64_t insertIdx = targetColIdx;
-        if (DIR == "r")
-            insertIdx++;
-        else if (DIR != "l")
+        SP<SColumnData> destCol = nullptr;
+
+        if (DIR == "l") {
+            destCol = WS->prev(TARGET_COL);
+            if (!destCol) {
+                const int64_t idx = WS->idx(TARGET_COL);
+                destCol = WS->add(idx);
+            }
+        } else if (DIR == "r") {
+            destCol = WS->next(TARGET_COL);
+            if (!destCol) {
+                const int64_t idx = WS->idx(TARGET_COL);
+                destCol = WS->add(idx + 1);
+            }
+        } else {
             return {};
+        }
 
-        insertIdx = std::clamp<int64_t>(insertIdx, 0, WS->columns.size());
+        destCol->add(FROM_WIN);
 
-        SP<SColumnData> newCol;
-        if (insertIdx >= (int64_t)WS->columns.size())
-            newCol = WS->add();
-        else
-            newCol = WS->add(insertIdx);
-
-        newCol->add(FROM_WIN);
-
-        WS->centerOrFitCol(newCol);
+        WS->centerOrFitCol(destCol);
         WS->recalculate();
-    }
- 
-    else if (ARGS[0] == "movecoltoworkspace") {
+    } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
 
