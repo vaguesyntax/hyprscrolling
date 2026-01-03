@@ -1340,6 +1340,10 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         const auto DIR        = ARGS[2];
         const auto FROM_WIN   = findWindowByAddress(ARGS[3]);
 
+        bool silent = false;
+        if (ARGS.size() >= 5)
+            silent = (ARGS[4] == "true");
+
         if (!TARGET_WIN || !FROM_WIN)
             return {};
 
@@ -1357,7 +1361,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
         const auto WS_DATA = TARGET_COL->workspace.lock();
         if (!WS_DATA || WS_DATA != FROM_COL->workspace.lock())
-            return {}; 
+            return {};
 
         const int64_t target_idx = WS_DATA->idx(TARGET_COL);
         const int64_t from_idx   = WS_DATA->idx(FROM_COL);
@@ -1369,11 +1373,9 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             return {};
 
         auto fromColPtr = WS_DATA->columns[from_idx];
-
         WS_DATA->columns.erase(WS_DATA->columns.begin() + from_idx);
 
         int64_t insert_idx = target_idx;
-
         if (from_idx < target_idx)
             insert_idx--;
 
@@ -1383,14 +1385,13 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             return {};
 
         insert_idx = std::clamp<int64_t>(insert_idx, 0, WS_DATA->columns.size());
-
-        WS_DATA->columns.insert(
-            WS_DATA->columns.begin() + insert_idx,
-            fromColPtr
-        );
+        WS_DATA->columns.insert(WS_DATA->columns.begin() + insert_idx, fromColPtr);
 
         WS_DATA->centerOrFitCol(fromColPtr);
         WS_DATA->recalculate();
+
+        if (!silent)
+            focusWindowUpdate(FROM_WIN);
     } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
