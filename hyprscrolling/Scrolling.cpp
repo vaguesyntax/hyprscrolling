@@ -1332,7 +1332,60 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         }
 
         WS1->recalculate();
-    } else if (ARGS[0] == "movecoltoworkspace") {
+    } else if (ARGS[0] == "swapaddrdir") { // usage will be like this: <target_window_address> <direction (l|r)> <from_window_address>
+        if (ARGS.size() < 4)
+            return {};
+
+        const auto TARGET_WIN = findWindowByAddress(ARGS[1]);
+        const auto DIR        = ARGS[2];
+        const auto FROM_WIN   = findWindowByAddress(ARGS[3]);
+
+        if (!TARGET_WIN || !FROM_WIN)
+            return {};
+
+        const auto TARGET_DATA = dataFor(TARGET_WIN);
+        const auto FROM_DATA   = dataFor(FROM_WIN);
+
+        if (!TARGET_DATA || !FROM_DATA)
+            return {};
+
+        const auto TARGET_COL = TARGET_DATA->column.lock();
+        const auto FROM_COL   = FROM_DATA->column.lock();
+
+        if (!TARGET_COL || !FROM_COL)
+            return {};
+
+        const auto WS = TARGET_COL->workspace.lock();
+        if (!WS || WS != FROM_COL->workspace.lock()) // different workspaces, ignoring
+            return {};
+
+        const int64_t targetColIdx = WS->idx(TARGET_COL);
+        if (targetColIdx < 0)
+            return {};
+
+        FROM_COL->remove(FROM_WIN);
+
+        int64_t insertIdx = targetColIdx;
+        if (DIR == "r")
+            insertIdx++;
+        else if (DIR != "l")
+            return {};
+
+        insertIdx = std::clamp<int64_t>(insertIdx, 0, WS->columns.size());
+
+        SP<SColumnData> newCol;
+        if (insertIdx >= (int64_t)WS->columns.size())
+            newCol = WS->add();
+        else
+            newCol = WS->add(insertIdx);
+
+        newCol->add(FROM_WIN);
+
+        WS->centerOrFitCol(newCol);
+        WS->recalculate();
+    }
+ 
+    else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
 
