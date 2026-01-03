@@ -1340,7 +1340,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         const auto DIR        = ARGS[2];
         const auto FROM_WIN   = findWindowByAddress(ARGS[3]);
 
-        if (!TARGET_WIN || !FROM_WIN || TARGET_WIN == FROM_WIN)
+        if (!TARGET_WIN || !FROM_WIN)
             return {};
 
         const auto TARGET_DATA = dataFor(TARGET_WIN);
@@ -1355,35 +1355,42 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         if (!TARGET_COL || !FROM_COL)
             return {};
 
-        const auto WS = TARGET_COL->workspace.lock();
-        if (!WS || WS != FROM_COL->workspace.lock())
-            return {}; // farklı workspace abort
+        const auto WS_DATA = TARGET_COL->workspace.lock();
+        if (!WS_DATA || WS_DATA != FROM_COL->workspace.lock())
+            return {}; 
 
-        // from window'u eski column'dan çıkar
-        FROM_COL->remove(FROM_WIN);
+        const int64_t target_idx = WS_DATA->idx(TARGET_COL);
+        const int64_t from_idx   = WS_DATA->idx(FROM_COL);
 
-        SP<SColumnData> destCol = nullptr;
-
-        if (DIR == "l") {
-            destCol = WS->prev(TARGET_COL);
-            if (!destCol) {
-                const int64_t idx = WS->idx(TARGET_COL);
-                destCol = WS->add(idx);
-            }
-        } else if (DIR == "r") {
-            destCol = WS->next(TARGET_COL);
-            if (!destCol) {
-                const int64_t idx = WS->idx(TARGET_COL);
-                destCol = WS->add(idx + 1);
-            }
-        } else {
+        if (target_idx == -1 || from_idx == -1)
             return {};
-        }
 
-        destCol->add(FROM_WIN);
+        if (target_idx == from_idx)
+            return {};
 
-        WS->centerOrFitCol(destCol);
-        WS->recalculate();
+        auto fromColPtr = WS_DATA->columns[from_idx];
+
+        WS_DATA->columns.erase(WS_DATA->columns.begin() + from_idx);
+
+        int64_t insert_idx = target_idx;
+
+        if (from_idx < target_idx)
+            insert_idx--;
+
+        if (DIR == "r")
+            insert_idx++;
+        else if (DIR != "l")
+            return {};
+
+        insert_idx = std::clamp<int64_t>(insert_idx, 0, WS_DATA->columns.size());
+
+        WS_DATA->columns.insert(
+            WS_DATA->columns.begin() + insert_idx,
+            fromColPtr
+        );
+
+        WS_DATA->centerOrFitCol(fromColPtr);
+        WS_DATA->recalculate();
     } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
