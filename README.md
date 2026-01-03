@@ -68,7 +68,7 @@ bind = Super, E, layoutmsg, fit active
 | promote | moves a window to its own new column | none |
 | swapcol | Swaps the current column with its neighbor to the left (`l`) or right (`r`). The swap wraps around (e.g., swapping the first column left moves it to the end). | `l` or `r` |
 | swapaddr | Swaps the two given windows's places. They have to be in the same workspace | (window address) (window adress) |
-| swapaddrdir | Moves the source window to target's windowses right or lef. They have to be in the same workspace| (target win addr) (l-r) (source win addr) |
+| swapaddrdir | Moves the source window to target's windows's right or left. They have to be in the same workspace, use silent bool to silently move windows without focus | (target win addr) (l-r) (source win addr) (silent) |
 | movecoltoworkspace | Moves the entire current column to the specified workspace, preserving its internal layout. Works with existing, new, and special workspaces. e.g. like `1`, `2`, `-1`, `+2`, `special`, etc. | workspace identifier|
 | togglefit | Toggle the focus_fit_method (center, fit) | none |
 
