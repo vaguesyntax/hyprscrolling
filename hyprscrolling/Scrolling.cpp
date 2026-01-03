@@ -1387,11 +1387,12 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         insert_idx = std::clamp<int64_t>(insert_idx, 0, WS_DATA->columns.size());
         WS_DATA->columns.insert(WS_DATA->columns.begin() + insert_idx, fromColPtr);
 
-        WS_DATA->centerOrFitCol(fromColPtr);
+        
         WS_DATA->recalculate();
 
         if (!silent)
-            focusWindowUpdate(FROM_WIN);
+            WS_DATA->centerOrFitCol(fromColPtr);
+            
     } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
