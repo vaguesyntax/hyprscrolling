@@ -953,14 +953,14 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
                 c->columnWidth = abs;
             }
 
-            WDATA->column->workspace->recalculate(true);
+            WDATA->column->workspace->recalculate();
             return {};
         }
 
         CScopeGuard x([WDATA] {
             WDATA->column->columnWidth = std::clamp(WDATA->column->columnWidth, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
             WDATA->column->workspace->centerOrFitCol(WDATA->column.lock());
-            WDATA->column->workspace->recalculate(true);
+            WDATA->column->workspace->recalculate();
         });
 
         if (ARGS[1][0] == '+' || ARGS[1][0] == '-') {
