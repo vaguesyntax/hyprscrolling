@@ -18,7 +18,6 @@ struct SScrollingWindowData {
     WP<SColumnData> column;
     float           windowSize             = 1.F;
     bool            ignoreFullscreenChecks = false;
-
     PHLWORKSPACEREF overrideWorkspace;
 
     CBox            layoutBox;

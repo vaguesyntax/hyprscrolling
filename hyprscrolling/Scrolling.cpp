@@ -4,6 +4,7 @@
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
+#include <hyprland/src/helpers/time/Timer.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/managers/eventLoop/EventLoopManager.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
@@ -139,31 +140,6 @@ SP<SScrollingWindowData> SColumnData::prev(SP<SScrollingWindowData> w) {
 bool SColumnData::has(PHLWINDOW w) {
     return std::ranges::find_if(windowDatas, [w](const auto& e) { return e->window == w; }) != windowDatas.end();
 }
-
-static PHLWINDOW findWindowByAddress(const std::string& addr) {
-    if (addr.empty())
-        return nullptr;
-
-    uintptr_t target = 0;
-
-    try {
-        target = std::stoull(addr, nullptr, 16);
-    } catch (...) {
-        return nullptr;
-    }
-
-    for (auto& w : g_pCompositor->m_windows) {
-        if (!w)
-            continue;
-
-        if (reinterpret_cast<uintptr_t>(w.get()) == target)
-            return w;
-    }
-
-    return nullptr;
-}
-
-
 
 SP<SColumnData> SWorkspaceData::add() {
     static const auto PCOLWIDTH = CConfigValue<Hyprlang::FLOAT>("plugin:hyprscrolling:column_width");
@@ -313,9 +289,8 @@ void SWorkspaceData::recalculate(bool forceInstant) {
     const CBox   USABLE = layout->usableAreaFor(PMONITOR);
 
     double       currentLeft = 0;
-    double cameraLeft  = MAX_WIDTH < USABLE.w ? std::round((MAX_WIDTH - USABLE.w) / 2.0) : leftOffset; // layout pixels
+    const double cameraLeft  = MAX_WIDTH < USABLE.w ? std::round((MAX_WIDTH - USABLE.w) / 2.0) : leftOffset; // layout pixels
     const auto   workAreaPos = layout->workAreaOnWorkspace(PMONITOR->m_activeWorkspace).pos();
-
 
     for (size_t i = 0; i < columns.size(); ++i) {
         const auto&  COL        = columns[i];
@@ -438,7 +413,6 @@ void CScrollingLayout::applyNodeDataToWindow(SP<SScrollingWindowData> data, bool
     calcPos  = calcPos + OFFSETTOPLEFT;
     calcSize = calcSize - OFFSETTOPLEFT - OFFSETBOTTOMRIGHT;
 
-
     if (PWINDOW->m_isPseudotiled) {
         // Calculate pseudo
         float scale = 1;
@@ -509,6 +483,8 @@ void CScrollingLayout::onEnable() {
                 m_config.configuredWidths.emplace_back(std::stof(std::string{w}));
             } catch (...) { Log::logger->log(Log::ERR, "scrolling: Failed to parse width {} as float", w); }
         }
+        if (m_config.configuredWidths.empty())
+            m_config.configuredWidths = {0.333, 0.5, 0.667, 1.0};
     });
 
     m_focusCallback = g_pHookSystem->hookDynamic("activeWindow", [this](void* hk, SCallbackInfo& info, std::any param) {
@@ -531,8 +507,17 @@ void CScrollingLayout::onEnable() {
         if (!DATA || !WINDOWDATA)
             return;
 
-        DATA->fitCol(WINDOWDATA->column.lock());
-        DATA->recalculate(); 
+        static const auto PFOLLOW_DEBOUNCE_MS = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:follow_debounce_ms");
+        static CTimer     debounceTimer;
+        if (debounceTimer.getMillis() < *PFOLLOW_DEBOUNCE_MS)
+            return;
+        static const auto PFITMETHOD = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:focus_fit_method");
+        if (*PFITMETHOD == 1)
+            DATA->fitCol(WINDOWDATA->column.lock());
+        else
+            DATA->centerCol(WINDOWDATA->column.lock());
+        DATA->recalculate();
+        debounceTimer.reset();
     });
 
     for (auto const& w : g_pCompositor->m_windows) {
@@ -851,7 +836,6 @@ SP<SScrollingWindowData> CScrollingLayout::findBestNeighbor(SP<SScrollingWindowD
     return nullptr;
 }
 
-
 std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::string message) {
     static auto centerOrFit = [](const SP<SWorkspaceData> WS, const SP<SColumnData> COL) -> void {
         static const auto PFITMETHOD = CConfigValue<Hyprlang::INT>("plugin:hyprscrolling:focus_fit_method");
@@ -874,20 +858,8 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             const auto COL = DATA->next(WDATA->column.lock());
             if (!COL) {
-                // move to max 
-                
-                const auto USABLE = DATA->layout->usableAreaFor(
-                    DATA->workspace->m_monitor.lock()
-                );
-
-                DATA->leftOffset = std::clamp(
-                    DATA->maxWidth() - USABLE.w,
-                    0.0,
-                    DATA->maxWidth()
-                );
-
-
-
+                // move to max
+                DATA->leftOffset = DATA->maxWidth();
                 DATA->recalculate();
                 focusWindowUpdate(nullptr);
                 return {};
@@ -1011,33 +983,27 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
     } else if (ARGS[0] == "fit") {
 
         if (ARGS[1] == "active") {
-            const auto PWINDOW = Desktop::focusState()->window();
-            if (!PWINDOW)
-                return {}; // veya sadece break
+            // fit the current column to 1.F
+            const auto WDATA    = dataFor(Desktop::focusState()->window());
+            const auto WORKDATA = dataFor(Desktop::focusState()->window()->m_workspace);
 
-            const auto WDATA    = dataFor(PWINDOW);
-            const auto WORKDATA = dataFor(PWINDOW->m_workspace);
-
-            if (!WDATA || !WORKDATA || WORKDATA->columns.empty())
+            if (!WDATA || !WORKDATA || WORKDATA->columns.size() == 0)
                 return {};
 
             const auto USABLE = usableAreaFor(WORKDATA->workspace->m_monitor.lock());
 
             WDATA->column->columnWidth = 1.F;
-            WORKDATA->leftOffset = 0;
 
+            WORKDATA->leftOffset = 0;
             for (size_t i = 0; i < WORKDATA->columns.size(); ++i) {
-                if (WORKDATA->columns[i]->has(PWINDOW))
+                if (WORKDATA->columns[i]->has(Desktop::focusState()->window()))
                     break;
 
                 WORKDATA->leftOffset += USABLE.w * WORKDATA->columns[i]->columnWidth;
             }
 
-            WORKDATA->recalculate();
+            WDATA->column->workspace->recalculate();
         } else if (ARGS[1] == "all") {
-            const auto PWINDOW = Desktop::focusState()->window();
-            if (!PWINDOW)
-                return {}; // veya sadece break
             // fit all columns on screen
             const auto WDATA = dataFor(Desktop::focusState()->window()->m_workspace);
 
@@ -1051,9 +1017,6 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             WDATA->recalculate();
         } else if (ARGS[1] == "toend") {
-            const auto PWINDOW = Desktop::focusState()->window();
-            if (!PWINDOW)
-                return {}; // veya sadece break
             // fit all columns on screen that start from the current and end on the last
             const auto WDATA = dataFor(Desktop::focusState()->window()->m_workspace);
 
@@ -1086,9 +1049,6 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             WDATA->recalculate();
         } else if (ARGS[1] == "tobeg") {
-            const auto PWINDOW = Desktop::focusState()->window();
-            if (!PWINDOW)
-                return {}; // veya sadece break
             // fit all columns on screen that start from the current and end on the last
             const auto WDATA = dataFor(Desktop::focusState()->window()->m_workspace);
 
@@ -1116,9 +1076,6 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             WDATA->recalculate();
         } else if (ARGS[1] == "visible") {
-            const auto PWINDOW = Desktop::focusState()->window();
-            if (!PWINDOW)
-                return {}; // veya sadece break
             // fit all columns on screen that start from the current and end on the last
             const auto WDATA = dataFor(Desktop::focusState()->window()->m_workspace);
 
@@ -1188,9 +1145,12 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             case 'b':
             case 'd': {
                 auto NEXT = WDATA->column->next(WDATA);
-                if (!NEXT)
-                    break; // sondaysan -> hiçbir şey yapma
-
+                if (!NEXT) {
+                    if (*PNOFALLBACK)
+                        break;
+                    else
+                        NEXT = WDATA->column->windowDatas.front();
+                }
 
                 focusWindowUpdate(NEXT->window.lock());
                 g_pCompositor->warpCursorTo(NEXT->window.lock()->middle());
@@ -1221,8 +1181,15 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             case 'r': {
                 auto NEXT = WDATA->column->workspace->next(WDATA->column.lock());
-                if (!NEXT)
-                    break;  
+                if (!NEXT) {
+                    if (*PNOFALLBACK) {
+                        centerOrFit(WDATA->column->workspace.lock(), WDATA->column.lock());
+                        WDATA->column->workspace->recalculate();
+                        g_pCompositor->warpCursorTo(WDATA->window.lock()->middle());
+                        break;
+                    } else
+                        NEXT = WDATA->column->workspace->columns.front();
+                }
 
                 auto pTargetWindowData = findBestNeighbor(WDATA, NEXT);
                 if (pTargetWindowData) {
@@ -1285,114 +1252,6 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         std::swap(WS_DATA->columns[current_idx], WS_DATA->columns[target_idx]);
         WS_DATA->centerOrFitCol(CURRENT_COL);
         WS_DATA->recalculate();
-    } else if (ARGS[0] == "swapaddr") {
-        if (ARGS.size() < 3)
-            return {};
-
-        const auto WIN1 = findWindowByAddress(ARGS[1]);
-        const auto WIN2 = findWindowByAddress(ARGS[2]);
-
-        if (!WIN1 || !WIN2)
-            return {};
-
-        const auto DATA1 = dataFor(WIN1);
-        const auto DATA2 = dataFor(WIN2);
-
-        if (!DATA1 || !DATA2)
-            return {};
-
-        const auto COL1 = DATA1->column.lock();
-        const auto COL2 = DATA2->column.lock();
-
-        if (!COL1 || !COL2)
-            return {};
-
-        const auto WS1 = COL1->workspace.lock();
-        const auto WS2 = COL2->workspace.lock();
-
-        if (!WS1 || WS1 != WS2) {
-            return {};
-        } 
-
-        if (COL1 == COL2) {
-            auto idx1 = COL1->idx(WIN1);
-            auto idx2 = COL1->idx(WIN2);
-            if (idx1 != idx2)
-                std::swap(COL1->windowDatas[idx1], COL1->windowDatas[idx2]);
-        } else { 
-            auto idx1 = COL1->idx(WIN1);
-            auto idx2 = COL2->idx(WIN2);
-
-            auto tmp = COL1->windowDatas[idx1];
-            COL1->windowDatas[idx1] = COL2->windowDatas[idx2];
-            COL2->windowDatas[idx2] = tmp;
-
-            COL1->windowDatas[idx1]->column = COL1;
-            COL2->windowDatas[idx2]->column = COL2;
-        }
-
-        WS1->recalculate();
-    } else if (ARGS[0] == "swapaddrdir") {
-        if (ARGS.size() < 4)
-            return {};
-
-        const auto TARGET_WIN = findWindowByAddress(ARGS[1]);
-        const auto DIR        = ARGS[2];
-        const auto FROM_WIN   = findWindowByAddress(ARGS[3]);
-
-        bool silent = false;
-        if (ARGS.size() >= 5)
-            silent = (ARGS[4] == "true");
-
-        if (!TARGET_WIN || !FROM_WIN)
-            return {};
-
-        const auto TARGET_DATA = dataFor(TARGET_WIN);
-        const auto FROM_DATA   = dataFor(FROM_WIN);
-
-        if (!TARGET_DATA || !FROM_DATA)
-            return {};
-
-        const auto TARGET_COL = TARGET_DATA->column.lock();
-        const auto FROM_COL   = FROM_DATA->column.lock();
-
-        if (!TARGET_COL || !FROM_COL)
-            return {};
-
-        const auto WS_DATA = TARGET_COL->workspace.lock();
-        if (!WS_DATA || WS_DATA != FROM_COL->workspace.lock())
-            return {};
-
-        const int64_t target_idx = WS_DATA->idx(TARGET_COL);
-        const int64_t from_idx   = WS_DATA->idx(FROM_COL);
-
-        if (target_idx == -1 || from_idx == -1)
-            return {};
-
-        if (target_idx == from_idx)
-            return {};
-
-        auto fromColPtr = WS_DATA->columns[from_idx];
-        WS_DATA->columns.erase(WS_DATA->columns.begin() + from_idx);
-
-        int64_t insert_idx = target_idx;
-        if (from_idx < target_idx)
-            insert_idx--;
-
-        if (DIR == "r")
-            insert_idx++;
-        else if (DIR != "l")
-            return {};
-
-        insert_idx = std::clamp<int64_t>(insert_idx, 0, WS_DATA->columns.size());
-        WS_DATA->columns.insert(WS_DATA->columns.begin() + insert_idx, fromColPtr);
-
-        
-        WS_DATA->recalculate();
-
-        if (!silent)
-            WS_DATA->centerOrFitCol(fromColPtr);
-            
     } else if (ARGS[0] == "movecoltoworkspace") {
         if (ARGS.size() < 2)
             return {};
@@ -1554,42 +1413,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             ws->recalculate();
         }
-    } else if (ARGS[0] == "focusaddr") {
-        if (ARGS.size() < 2)
-            return {};
-
-        const auto PWINDOW = findWindowByAddress(ARGS[1]);
-
-        if (!PWINDOW)
-            return {};
-
-        if (!validMapped(PWINDOW) || PWINDOW->isHidden())
-            return {};
-
-        if (!PWINDOW->m_workspace || !PWINDOW->m_workspace->isVisible())
-            return {};
-
-        
-
-        if (auto wd = dataFor(PWINDOW)) {
-            if (auto col = wd->column.lock()) {
-                if (auto ws = col->workspace.lock()) {
-                    ws->centerOrFitCol(col);
-                    ws->recalculate();
-                }
-            }
-        }
-
-        focusWindowUpdate(PWINDOW);
-
-        const auto MID = PWINDOW->middle();
-        if (MID.x >= 0 && MID.y >= 0)
-            g_pCompositor->warpCursorTo(MID);
-
-        return {};
     }
-
-
     return {};
 }
 
