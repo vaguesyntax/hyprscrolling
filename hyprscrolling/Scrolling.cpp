@@ -1018,6 +1018,8 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
 
             WDATA->column->columnWidth = abs;
         }
+
+        focusWindowUpdate(WDATA->window.lock());
     } else if (ARGS[0] == "movewindowto") {
         moveWindowTo(Desktop::focusState()->window(), ARGS[1], false);
     } else if (ARGS[0] == "fit") {
