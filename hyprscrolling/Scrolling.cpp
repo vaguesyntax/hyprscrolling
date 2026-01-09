@@ -966,6 +966,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             }
 
             WDATA->column->workspace->recalculate();
+            focusWindowUpdate(WDATA->window.lock());
             return {};
         }
 
@@ -973,6 +974,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             WDATA->column->columnWidth = std::clamp(WDATA->column->columnWidth, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
             WDATA->column->workspace->centerOrFitCol(WDATA->column.lock());
             WDATA->column->workspace->recalculate();
+            focusWindowUpdate(WDATA->window.lock());
         });
 
         if (ARGS[1][0] == '+' || ARGS[1][0] == '-') {
@@ -1001,7 +1003,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
                     }
                 }
 
-                return {};
+                return {}; 
             }
 
             const auto PLUSMINUS = getPlusMinusKeywordResult(ARGS[1], 0);
@@ -1019,7 +1021,6 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             WDATA->column->columnWidth = abs;
         }
 
-        focusWindowUpdate(WDATA->window.lock());
     } else if (ARGS[0] == "movewindowto") {
         moveWindowTo(Desktop::focusState()->window(), ARGS[1], false);
     } else if (ARGS[0] == "fit") {
