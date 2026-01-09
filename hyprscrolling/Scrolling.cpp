@@ -970,7 +970,7 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
             return {};
         }
 
-        CScopeGuard x([WDATA] {
+        CScopeGuard x([this, WDATA] {
             WDATA->column->columnWidth = std::clamp(WDATA->column->columnWidth, MIN_COLUMN_WIDTH, MAX_COLUMN_WIDTH);
             WDATA->column->workspace->centerOrFitCol(WDATA->column.lock());
             WDATA->column->workspace->recalculate();
