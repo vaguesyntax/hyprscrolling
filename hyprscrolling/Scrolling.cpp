@@ -1297,6 +1297,8 @@ std::any CScrollingLayout::layoutMessage(SLayoutMessageHeader header, std::strin
         std::swap(WS_DATA->columns[current_idx], WS_DATA->columns[target_idx]);
         WS_DATA->centerOrFitCol(CURRENT_COL);
         WS_DATA->recalculate();
+
+        focusWindowUpdate(WDATA->window.lock());
     } else if (ARGS[0] == "swapaddr") {
         if (ARGS.size() < 3)
             return {};
